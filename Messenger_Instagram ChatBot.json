@@ -1,0 +1,1246 @@
+{
+  "name": "Messenger/Instagram ChatBot",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "=define",
+        "text": "=Email & Name for booking consultation:\n{{ $json.text }}\n\nLead Info:\n{{ $json.extraPrompt }}\n\nTrigger from Channel: \n{{ $json.trigger }}",
+        "options": {
+          "systemMessage": "=## 1. Core Identity & Goal\n\nYou are a friendly, efficient sales assistant focused on **residential solar panel systems**. Your job is to chat with leads, answer service questions using the knowledge base, qualify interest, collect contact details, **log everything in the CRM (`crmAgent`)**, and **book consultations (`calendarAgent`)**.\n\n## 2. Knowledge Source (CRITICAL)\n\n* Use **`technical_and_sales_knowledge` ONLY** to explain solar services, benefits, comparisons, warranties, and handle pricing (focus on value, no specific numbers).\n* **Do NOT use external info.** If something’s missing, ask the user or suggest a consultation. Never say “I don’t know.”\n\n## 3. Communication Rules (CRITICAL)\n\n* **Short & Conversational:** Max 160 characters per message. Keep it friendly.\n* **One Thought at a Time:** Give small chunks of info. Ask one question at a time.\n* **No Lists:** Avoid bullets or numbers.\n* **No Handoff Language.** Never say “Let me connect you.”\n\n## 4. Conversation Flow & Actions\n\n### State: INITIAL\n\n* **Goal:** Greet the user.\n* **Action:** Start with a simple hello like: “Hi! How can we help you?”\n* Only mention solar panels or consultations if the user brings it up first.\n* **Move to QUALIFYING when user shows interest.**\n\n### State: QUALIFYING\n\n* **Goal:** Understand the user's solar needs.\n* **Action:** Use `technical_and_sales_knowledge` to answer questions and explain solar options. Confirm if they want a consultation.\n* **Move to CONTACT\\_COLLECTION only after clear interest.**\n\n### State: CONTACT\\_COLLECTION\n\n* **WhatsApp Trigger:** **Skip this step** — you already have contact info.\n* **Other Triggers:**\n\n  * Ask for **First Name**.\n  * Then ask for **Email Address**.\n  * Save to memory (`contact.collectedInfo`).\n  * **Use `crmAgent` right after collecting info** to log the lead.\n  * **Move to SCHEDULING** after CRM step.\n\n### State: SCHEDULING\n\n* **Goal:** Book a consultation using `calendarAgent`.\n* **Requirements:** Name + Email must be saved and logged.\n* **Steps:**\n\n  * Ask for a preferred date and time.\n  * Use `calendarAgent` when you get a specific time.\n  * After booking, use `crmAgent` to update status to ‘Consultation Scheduled’.\n  * **Move to FOLLOW\\_UP.**\n\n### State: FOLLOW\\_UP\n\n* **Goal:** Confirm the booking details.\n* **Action:** Repeat date/time and let them know a calendar invite will go to their email.\n\n## 5. Response Examples\n\n* “Got it! A solar consultation could be a great step. Can I grab your first name to set it up?”\n* “Thanks, \\[Name]. Got your email. Let’s pick a time that works for your consultation. Any preferred day or time?”\n* “You’re set for Thursday at 3 PM. You’ll get a calendar invite to \\[Email]. Talk soon!”\n\n## 6. Memory Management\n\n```json\n{\n  \"contact\": {\n    \"verified\": false,\n    \"collectedInfo\": {\n      \"name\": \"\", \"email\": \"\", \"serviceInterest\": \"\", \"timingPreference\": \"\"\n    },\n    \"state\": \"CURRENT_STATE\",\n    \"lastStateChange\": \"timestamp\"\n  }\n}\n```\n\n## 7. Final Checks\n\n* Stick to the state flow.\n* Use `crmAgent` right after contact info is collected and again after booking.\n* Only use `calendarAgent` after all info is collected.\n* Adhere strictly to Communication Rules & Knowledge Source limits.\n\nIMPORTANT: Current date/time: {{ $now }}\nIMPORTANT: Trigger: {{ $json.trigger }}\n"
+        }
+      },
+      "id": "22b0270f-bcd1-4878-8b6c-9fa81ab6b4fe",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1984,
+        448
+      ],
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {},
+      "id": "bc031876-946d-4e5d-8c4f-103fe088cea8",
+      "name": "No Operation, do nothing",
+      "type": "n8n-nodes-base.noOp",
+      "position": [
+        1648,
+        448
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "9df0a1da-742d-4ac6-b4f8-a76006c314db",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $('No Operation, do nothing').item.json.trigger }}",
+                    "rightValue": "facebook"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "facebook"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "98550c9d-4266-4694-8d5a-a3972d6aad22",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $('No Operation, do nothing').item.json.trigger }}",
+                    "rightValue": "instagram"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "instagram"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "version": 2,
+                  "leftValue": "",
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "dd8bf574-3e33-42fb-9cb0-05f2482a039c",
+                    "operator": {
+                      "name": "filter.operator.equals",
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "leftValue": "={{ $('No Operation, do nothing').item.json.trigger }}",
+                    "rightValue": "chat"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Chat"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0341f432-1c58-4342-9d11-7527724a5226",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        2768,
+        400
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "26a3553a-f37b-4f46-9a84-3f1661a5d152",
+              "name": "trigger",
+              "type": "string",
+              "value": "facebook"
+            },
+            {
+              "id": "11ae4f49-44ec-4416-a8d2-49a15fdf1e63",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].messaging[0].message.text }}"
+            },
+            {
+              "id": "3cfa9c98-dca2-43e6-9d69-7a20f61772f6",
+              "name": "sessionId",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].messaging[0].sender.id }}"
+            },
+            {
+              "id": "b103277f-d1ef-498f-9286-14b0b7718c5d",
+              "name": "extraPrompt",
+              "type": "string",
+              "value": "This conversation took place on Facebook Messenger.\n\nIf user is interested in your service, you can send the lead form to user and ask filling in\n\nYour response must be less then 300 chars."
+            },
+            {
+              "id": "f8d11aca-c325-4d8c-9c67-ef9440756f05",
+              "name": "channelId",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ae6871c9-9624-494f-8cc7-a44f80aadae9",
+      "name": "Edit Fields - facebook",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1248,
+        144
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "id": "23c09827-70cd-4258-b11e-48f98f962d71",
+      "name": "Respond to Webhook - facebook get",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        400,
+        432
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7dee1826-e2b5-44ea-9c0f-a0adb5bc740c",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.entry[0].messaging[0].message?.is_echo }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b3b4e1a0-3d8e-43ef-a2c8-479bb6e759c8",
+      "name": "If is not echo - facebook",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        800,
+        160
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "\"EVENT_RECEIVED\"",
+        "options": {}
+      },
+      "id": "e9baa172-8810-491f-8f10-1800aa5fed6d",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        400,
+        192
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7dee1826-e2b5-44ea-9c0f-a0adb5bc740c",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body.entry[0].messaging[0].message?.is_echo }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "52f4ecb7-7955-4b35-b651-c9e66b97951d",
+      "name": "If is not echo - facebook1",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        848,
+        720
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "\"EVENT_RECEIVED\"",
+        "options": {}
+      },
+      "id": "b6cc1170-f2f3-41ad-b38c-750efbdb788f",
+      "name": "Respond to Webhook1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        432,
+        720
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "26a3553a-f37b-4f46-9a84-3f1661a5d152",
+              "name": "trigger",
+              "type": "string",
+              "value": "instagram"
+            },
+            {
+              "id": "11ae4f49-44ec-4416-a8d2-49a15fdf1e63",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].messaging[0].message.text }}"
+            },
+            {
+              "id": "3cfa9c98-dca2-43e6-9d69-7a20f61772f6",
+              "name": "sessionId",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].messaging[0].sender.id }}"
+            },
+            {
+              "id": "f128bfd3-f02e-4444-8556-39fadb07d08e",
+              "name": "extraPrompt",
+              "type": "string",
+              "value": "This conversation took place on Instagram.\n\nYour response must be less then 500 chars."
+            },
+            {
+              "id": "679e091e-d9dd-4cc3-b5a1-97f3790e09d0",
+              "name": "channelId",
+              "type": "string",
+              "value": "={{ $json.body.entry[0].id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "24abfbd1-1b77-4f89-b57d-1a270f105091",
+      "name": "Edit Fields - instagram",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1264,
+        704
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST",
+          "GET"
+        ],
+        "path": "Facbook-Trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8b222c61-6248-4647-b1b8-b08facebb9ae",
+      "name": "Facebook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        48,
+        208
+      ],
+      "webhookId": "b7e461f0-9a0d-4e27-9e86-f74a3e684e3a",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-small",
+        "options": {}
+      },
+      "id": "99cc27a6-6994-4f11-b712-ff255af1fa62",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        1840,
+        1280
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": {
+          "id": "lanWzcUdWmrmpaLb",
+          "name": "OpenAi Mike"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e776afaa-741b-4c0e-9979-d8476a33f874",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        2288,
+        1168
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "openAiApi": {
+          "id": "lanWzcUdWmrmpaLb",
+          "name": "OpenAi Mike"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "name": "calendarAgent",
+        "description": "Use this tool to schedule a consultation appointment in the calendar. You must provide the attendee's email address and the proposed start time in ISO 8601 format. You can optionally provide the attendee's name and a summary.\n\n",
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "TkHxvBI0iEyvD1P6",
+          "cachedResultName": "Calendar workflow"
+        },
+        "workflowInputs": {
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "schema": [
+            {
+              "id": "query",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "query",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "query"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "18a73d2b-7bad-4eee-89ad-c1e418fbfaee",
+      "name": "Calendar Agent",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        2464,
+        688
+      ],
+      "typeVersion": 2,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "name": "crmAgent",
+        "description": "Call this tool to take any action from CRM",
+        "workflowId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "nu8l4lx88kpzTeoc",
+          "cachedResultName": "CRM workflow"
+        },
+        "workflowInputs": {
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "schema": [
+            {
+              "id": "query",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "query",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "query"
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "7ebed9b7-edb3-4207-81f3-39706fbf9f92",
+      "name": "CRM Agent",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "position": [
+        2304,
+        688
+      ],
+      "typeVersion": 2,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "name": "sales_technique_knowledge",
+        "description": "Retrieve information about sales technique and company details",
+        "topK": "=10"
+      },
+      "id": "c2ec9514-ea04-4c9c-8863-5af514aaa8e4",
+      "name": "sales_technique_knowledge",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "position": [
+        2112,
+        944
+      ],
+      "typeVersion": 1,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "documents",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "id": "b9990f39-f00e-4200-b05a-aea0d00c3c00",
+      "name": "Supabase vector store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "position": [
+        1904,
+        1104
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "so26iL48yj1mWDFr",
+          "name": "ChatBot Supabase"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "14yV_R8xYeQdzlIg6TuHwuMCswVdn_yrgFgBjK13BQ_Q"
+        },
+        "options": {}
+      },
+      "id": "3cf09167-6a67-48ef-9444-1fc420d40f8a",
+      "name": "Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        1584,
+        2752
+      ],
+      "typeVersion": 3,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "documents",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "id": "9f849cb2-4ef3-4f67-b8e4-de1eb79182d6",
+      "name": "Supabase Vector Store1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "position": [
+        1808,
+        2752
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "supabaseApi": {
+          "id": "so26iL48yj1mWDFr",
+          "name": "ChatBot Supabase"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "id": "3fa09e86-dce9-4c70-8579-5e6389fd01a5",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        1952,
+        2992
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2d3ecf32-2046-4c1c-bcb8-eb69b787211d",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        2048,
+        3200
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "0ef3f8e9-4ddf-43a8-a793-06d540a8d2a1",
+      "name": "When clicking ‘Test workflow’",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        1328,
+        2752
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "9d029f3a-db1c-4b9e-bc1e-b52e907803f3",
+      "name": "Embeddings OpenAI1",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        1728,
+        3024
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "lanWzcUdWmrmpaLb",
+          "name": "OpenAi Mike"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84dc8840-97a0-47d4-8a18-0608a1b357ae",
+              "name": "trigger",
+              "type": "string",
+              "value": "chat"
+            },
+            {
+              "id": "9a46b726-e9aa-4cb5-8c1a-d6d38b920908",
+              "name": "text",
+              "type": "string",
+              "value": "={{ $json.chatInput }}"
+            },
+            {
+              "id": "e2b7a6a0-2677-4b56-b037-f010efb6da46",
+              "name": "sessionId",
+              "type": "string",
+              "value": "={{ $json.sessionId }}"
+            },
+            {
+              "id": "bca35569-12c5-443e-8e08-c9f8718cd31a",
+              "name": "extraPrompt",
+              "type": "string",
+              "value": "This conversation took place on Chatbox.\n\nYour response must be less then 1000 chars."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2826a7fd-b94c-4bab-860f-1f5f99e16d02",
+      "name": "Edit Fields - chat",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1200,
+        1152
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c9637e8e-b0be-4f3d-8b7c-4ff17366b330",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        864,
+        1152
+      ],
+      "webhookId": "a8f2a9ac-9715-4116-9764-75792127bfb5",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "content": "## Facebook webhook connection ##",
+        "height": 760,
+        "width": 1640,
+        "color": 5
+      },
+      "id": "340ca406-85d2-4b76-83f7-7647d4f50fe4",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -160,
+        -160
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Instagram webhook connection ##",
+        "height": 760,
+        "width": 1640,
+        "color": 5
+      },
+      "id": "87d1b050-0981-4397-b0fe-52461decbb91",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -160,
+        640
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## DM Agent ##",
+        "height": 540,
+        "width": 1140,
+        "color": 5
+      },
+      "id": "a735e9c7-6286-46f9-9b38-4cf10288736e",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1552,
+        320
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## Sales data store ##",
+        "height": 540,
+        "width": 1140,
+        "color": 5
+      },
+      "id": "c3d63fe9-5e27-4c67-95c3-b31e7f7c3ec6",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1552,
+        880
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "## SEND REPLAY TO PLATFORMS ##",
+        "height": 520,
+        "width": 560,
+        "color": 5
+      },
+      "id": "cebf654a-267a-407f-aaba-6fd0308749f1",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2720,
+        240
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "f14d44c1-3898-435e-9c2d-85127a4a67b4",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1952,
+        688
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "lanWzcUdWmrmpaLb",
+          "name": "OpenAi Mike"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        2080,
+        688
+      ],
+      "id": "dde1ff46-41a7-4111-b5e5-2f46e698d77a",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "lkhzvyN3yZTyA3eB",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v21.0",
+        "node": "me",
+        "edge": "messages",
+        "options": {
+          "queryParametersJson": "={\n  \"recipient\":{\n    \"id\":\"{{ $json.body.entry[0].messaging[0].sender.id }}\"\n  },\n  \"sender_action\":\"typing_on\"\n}"
+        }
+      },
+      "id": "38b1f176-75b7-4273-b925-52d2833dafea",
+      "name": "Chat Function - typing_on",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        1088,
+        -96
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "Apym0pdGXjTBLt73",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.instagram.com/v23.0/me/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"recipient\":{\n    \"id\":\"{{ $('No Operation, do nothing').item.json.sessionId }}\"\n  },\n  \"messaging_type\": \"RESPONSE\",\n  \"message\":{\n    \"text\":{{ JSON.stringify($json.output.substring(0,1000)) }}\n  }\n}",
+        "options": {}
+      },
+      "id": "8b1d9fcc-0952-435f-96f3-0ab96ea35e0f",
+      "name": "IG Chat Function - Send String",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        3024,
+        544
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38UIACBY4o8hTADD",
+          "name": "Header Auth account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v22.0",
+        "node": "me",
+        "edge": "messages",
+        "options": {
+          "queryParametersJson": "={\n  \"recipient\":{\n    \"id\":\"{{ $('No Operation, do nothing').item.json.sessionId }}\"\n  },\n  \"messaging_type\": \"RESPONSE\",\n  \"message\":{\n    \"text\":{{ JSON.stringify($json.output.substring(0,1000)) }}\n  }\n}"
+        }
+      },
+      "id": "5c3fa163-358c-4c81-aea9-c7306fd939d0",
+      "name": "FB Chat Function send String",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "position": [
+        3024,
+        320
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "Apym0pdGXjTBLt73",
+          "name": "Facebook Graph account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "multipleMethods": true,
+        "httpMethod": [
+          "POST",
+          "GET"
+        ],
+        "path": "Insta-Trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8a971fc7-bcf6-4f0c-b4ce-58ff3a3d8f12",
+      "name": "Instagram Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -16,
+        752
+      ],
+      "webhookId": "b7e461f0-9a0d-4e27-9e86-f74a3e684e3a",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {}
+      },
+      "id": "fc14b972-6171-4493-938e-ea76aed05c4a",
+      "name": "Respond to Webhook - facebook get1",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [
+        432,
+        928
+      ],
+      "typeVersion": 1.1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "FB Chat Function send String",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IG Chat Function - Send String",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Facebook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook - facebook get",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase vector store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields - chat": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "sales_technique_knowledge",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "If is not echo - facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        [
+          {
+            "node": "If is not echo - facebook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase vector store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "sales_technique_knowledge",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields - facebook": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields - instagram": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation, do nothing": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If is not echo - facebook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields - facebook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Chat Function - typing_on",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sales_technique_knowledge": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If is not echo - facebook1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields - instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields - chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook - facebook get1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7ac592da-0b6b-4f72-9cc8-ccd419929fa0",
+  "meta": {
+    "instanceId": "7fc3c61ef85638e1d25d56a31cca83a85dfce006123206ad2bfccd8da6f88b47"
+  },
+  "id": "AvBmiLH3i8bR7cic",
+  "tags": []
+}
