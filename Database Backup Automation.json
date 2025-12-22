@@ -1,0 +1,400 @@
+{
+  "name": "Database Backup Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 6-18/2 * * 1-5"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -3392,
+        96
+      ],
+      "id": "7baee4f7-465d-48da-9a98-a0846b28257a",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "content": "## CRON JOB\nScheduled backup every **2HRS**",
+        "height": 240
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3456,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "9ef92746-442b-4fa1-98d9-c55709f20292",
+      "name": "Sticky Note17"
+    },
+    {
+      "parameters": {
+        "content": "## SSH CLIENT [DUMP ALL DB]\n\nEXECUTE BACKUP MYSQL",
+        "height": 288,
+        "width": 336
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3008,
+        -32
+      ],
+      "typeVersion": 1,
+      "id": "a9c3f7ba-9b7f-4c5c-8aaf-9db59ab8637a",
+      "name": "Sticky Note19"
+    },
+    {
+      "parameters": {
+        "command": "={{ \n  `C:\\\\Execute\\\\BACKUP.bat`\n}}\n",
+        "cwd": "="
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -2896,
+        96
+      ],
+      "id": "2f1e128e-7014-4eee-a601-7889526375c2",
+      "name": "mysqldump",
+      "credentials": {
+        "sshPassword": {
+          "id": "WJYuGLUkJYUaMPO3",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f8636421-2d5f-454e-a7e2-a416aea893cb",
+              "leftValue": "={{ $json.code }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -2432,
+        96
+      ],
+      "id": "44d9f92d-a980-4368-8434-b464472fcb6d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "content": "**CONDITION LOGIC**\nIF RETURN CODE IS NOT 0 = ERROR OCCURED",
+        "height": 288,
+        "width": 432
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2592,
+        -32
+      ],
+      "typeVersion": 1,
+      "id": "bdd906e0-25c9-4d27-a4ab-73c0598d4089",
+      "name": "Sticky Note20"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -1920,
+        -272
+      ],
+      "id": "29db2a7e-821a-4b4e-a235-f100ca4e5786",
+      "name": "Send email",
+      "webhookId": "52de7560-a58a-43c9-87e3-21029ecebdda",
+      "credentials": {
+        "smtp": {
+          "id": "yB4CHfYjrY9pclST",
+          "name": "SMTP account 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "**CONDITION LOGIC**\nIF RETURN CODE IS NOT 0 = ERROR OCCURED",
+        "height": 256,
+        "width": 384
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2064,
+        -368
+      ],
+      "typeVersion": 1,
+      "id": "e95ab561-76d9-4ce8-ae87-73259d05d236",
+      "name": "Sticky Note21"
+    },
+    {
+      "parameters": {
+        "content": "**IMPORTING**",
+        "height": 256,
+        "width": 384
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2096,
+        176
+      ],
+      "typeVersion": 1,
+      "id": "76b01819-8acf-4530-9271-40bb148f8cb4",
+      "name": "Sticky Note22"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f8636421-2d5f-454e-a7e2-a416aea893cb",
+              "leftValue": "={{ $json.code }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1568,
+        352
+      ],
+      "id": "8f0f0649-d175-4d80-bc89-7d7330b162a2",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -1184,
+        176
+      ],
+      "id": "26a4a42c-965c-496a-84a2-655815d2b795",
+      "name": "Send email1",
+      "webhookId": "52de7560-a58a-43c9-87e3-21029ecebdda",
+      "credentials": {
+        "smtp": {
+          "id": "yB4CHfYjrY9pclST",
+          "name": "SMTP account 2"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "**CONDITION LOGIC**\nIF RETURN CODE IS NOT 0 = ERROR OCCURED",
+        "height": 256,
+        "width": 384
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1328,
+        80
+      ],
+      "typeVersion": 1,
+      "id": "30ea4df5-c9e4-4776-8d3f-42a2c313d811",
+      "name": "Sticky Note23"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1184,
+        464
+      ],
+      "id": "1fe5dd02-d076-4ca7-afee-604d83bfc1a3",
+      "name": "IMPORTING MONITORING",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "QaF8eHEVI0wlBDEK",
+          "name": "Google Sheets account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "command": "={{ \n  `C:\\\\Execute\\\\IMPORT.bat`\n}}\n",
+        "cwd": "="
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -1952,
+        272
+      ],
+      "id": "1999fbb7-0053-4dc1-ba8a-28df7af93110",
+      "name": "mysql import",
+      "credentials": {
+        "sshPassword": {
+          "id": "WJYuGLUkJYUaMPO3",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3424,
+        336
+      ],
+      "id": "5080bcb1-218e-4fd8-b6fc-6636d0b1e1f2",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "mysqldump",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mysqldump": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "mysql import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send email1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IMPORTING MONITORING",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mysql import": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "mysqldump",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Manila",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "391c9f5d-4c8a-4fff-8761-d94ae9fe9d08",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7fc3c61ef85638e1d25d56a31cca83a85dfce006123206ad2bfccd8da6f88b47"
+  },
+  "id": "DGLi5PoKvynhE9O8",
+  "tags": []
+}
