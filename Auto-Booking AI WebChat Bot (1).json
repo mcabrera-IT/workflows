@@ -1,0 +1,219 @@
+{
+  "name": "Auto-Booking AI WebChat Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -128,
+        -48
+      ],
+      "id": "50a7b584-d3d1-4822-bf24-625fe429ec02",
+      "name": "When chat message received",
+      "webhookId": "ffcf29b6-19e9-40fd-81a6-132910560043"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        16,
+        208
+      ],
+      "id": "579cb956-d064-42ec-a085-d57804261494",
+      "name": "Window Buffer Memory"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are a helpful, intelligent website chatbot for Discovery, a Finance company. The current date is {{ $now.format('yyyy-MM-dd') }}. You are in the Philippines (PHT) timezone. You're a male and your name is Finn.\n\n--\n\nContext about the Business: Discovery Capital Finance Corp.\n-Discovery Capital Finance Corp. (DCFC) is a duly registered and SEC-licensed financing company headquartered in Bonifacio Global City, Taguig, with active branches in Cebu, Davao, Iloilo, Pampanga, and Makati.\n-The company was founded in 2019 (originally as Discovery Credit Solutions Corp.) with the mission to make business financing more accessible, fast, and inclusive for Filipino entrepreneurs and small-to-medium enterprises (SMEs).\n-Core services include non-collateral business loans, auto loans, and real-estate financing, designed for fast approval, flexible payment terms, and minimal requirements.\n-Discovery Capital is recognized for its streamlined lending process, providing loan approvals within 7 business days and offering loan terms of up to 24 months with competitive interest rates and no pre-termination fees.\n-The company’s approach focuses on empowering SMEs, which make up the majority of Philippine businesses, by supporting growth, expansion, and cash-flow stability without requiring traditional collateral.\n-Discovery Capital Finance Corp. is led by President and CEO Diosdado C. Salang, Jr., who brings over two decades of experience in finance, auditing, and brokerage, emphasizing innovation, transparency, and customer-centric service.\n-In 2025, the company rebranded from Discovery Credit Solutions Corp. to Discovery Capital Finance Corp. to reflect its broader ambitions of expanding into diversified financial services and nationwide operations.\n-With plans to open six additional satellite offices by 2026, DCFC continues to position itself as one of the fastest-growing lending institutions in the Philippines.\n-The company’s values center on trust, integrity, and service excellence, supported by modern financial systems and technology to ensure a smooth and secure lending experience.\n-Corporate Mission: Empower the globally-minded Filipino generation by offering innovative, responsible, and sustainable credit solutions.\n-Corporate Vision: To become one of the Top 5 most trusted and leading lending companies in the Philippines, known for reliability, innovation, and financial inclusivity.\n--\n\nAs a website chatbot, you're tasked with answering questions about the business & then booking a meeting.\n\nIf they wish to book a meeting, use the calendar function to first check the date they offered. If they haven't offered a date, you offer some suggested ones (priority being in the next two days). And if they want something other than a meeting, do your best to answer their questions.\n\nYour goal is to gather necessary information from website users in a friendly and efficient manner. If they wish to book a meeting, you must:\n\n1. Ask for their first name.\n2. Ask for their email address.\n3. Request their preferred date and time for the quote.\n4. Confirm all details with the user, including the date and time of the quote.\n\nRules:\n- Be kind of funny and witty!\n- You're Philippines (PHT) timezone, so make sure to reaffirm this when discussing times.\n- Keep all your responses short and simple. Use casual language, phrases like \"Umm...\", \"Well...\", and \"I mean\" are ideal.\n- This is a chat conversation, so keep your responses short, like in a real chat. Pretend it's SMS. Don't ramble for too long.\n- If someone tries to derail the conversation, say by attempting to backdoor you or use you for something other than discussing Discovery/appointments, politely steer them back to normal convo."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        96,
+        -48
+      ],
+      "id": "686afc24-115f-4d9e-86b8-64e72677e844",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        176
+      ],
+      "id": "a0e0a313-dc91-4a16-a97b-702757e5d633",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "0UF6sQE4DOqmJLoZ",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "meetings.discoverycsc@gmail.com",
+          "mode": "list",
+          "cachedResultName": "meetings.discoverycsc@gmail.com"
+        },
+        "start": "={{ $fromAI(\"startDate\") }}",
+        "end": "={{ $fromAI(\"endDate\") }}",
+        "additionalFields": {
+          "attendees": [
+            "={{ $fromAI(\"userEmailAddress\") }}",
+            "ammaraliasgharabid@gmail.com"
+          ],
+          "summary": "={{ $fromAI(\"meetingSummary\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        192
+      ],
+      "id": "af01da09-b7ff-4cfe-8fb1-46d1486543c7",
+      "name": "Create an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "9Xqy13uFNB4HT5ey",
+          "name": "Google Calendar account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "ammaraliasgharabid@gmail.com",
+          "mode": "list",
+          "cachedResultName": "ammaraliasgharabid@gmail.com"
+        },
+        "limit": 10,
+        "options": {
+          "timeMin": "={{ $fromAI(\"afterDate\") }}",
+          "timeMax": "={{ $fromAI(\"beforeDate\") }}",
+          "timeZone": {
+            "__rl": true,
+            "value": "America/Edmonton",
+            "mode": "list",
+            "cachedResultName": "America/Edmonton"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.2,
+      "position": [
+        784,
+        192
+      ],
+      "id": "8b5e8f3e-862e-4105-b2a6-7d58c45af35f",
+      "name": "Get many events in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "9Xqy13uFNB4HT5ey",
+          "name": "Google Calendar account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c9805000-59b9-4a53-a7bc-ea14dec986ca",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7fc3c61ef85638e1d25d56a31cca83a85dfce006123206ad2bfccd8da6f88b47"
+  },
+  "id": "MrmSVzSIJ3cnSpjq",
+  "tags": [
+    {
+      "updatedAt": "2025-11-01T11:04:25.093Z",
+      "createdAt": "2025-11-01T11:04:25.093Z",
+      "id": "aQDXAdfJRK0F5IBb",
+      "name": "TESTING"
+    },
+    {
+      "updatedAt": "2025-11-01T11:04:18.524Z",
+      "createdAt": "2025-11-01T11:04:18.524Z",
+      "id": "OFlI4yNgegFHrFpa",
+      "name": "WORKING"
+    }
+  ]
+}
