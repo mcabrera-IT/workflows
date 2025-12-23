@@ -1,0 +1,248 @@
+{
+  "name": "BANKSTATEMENT OCR",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Upload",
+        "formDescription": "Here you will upload a \"Bank Statements Soft Copy\" preferably in pdf file.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Attachment",
+              "fieldType": "file",
+              "acceptFileTypes": ".pdf,.jpg,.png"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -1024,
+        -32
+      ],
+      "id": "f720fdef-eb15-48cc-869a-7db73011084f",
+      "name": "On form submission",
+      "webhookId": "b692ffb7-c64e-4c08-bdff-393903760c0a"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert at analyzing bank statements. Your task is to extract all transactions with perfect accuracy, paying special attention to dates.\n\nFollow this multi-step process carefully:\n1.  **Identify Statement Period**: Before doing anything else, scan the document to find the statement's period (e.g., \"Statement from Dec 15, 2024 to Jan 14, 2025\"). This is the most critical step for date accuracy.\n2.  **Determine Correct Year**: Use the year(s) from the statement period as the ground truth. Many transaction lines only show the month and day (e.g., 'Dec 16'). You must use the context of the statement period to assign the correct year.\n3.  **Handle Year-End Crossover**: This is a common point of error. If a statement period crosses from December to January, transactions listed under December belong to the *earlier* year, and those under January belong to the *later* year. For a statement period of \"Dec 15, 2024 - Jan 14, 2025\", a transaction on \"Dec 16\" MUST be \"2024-12-16\", and a transaction on \"Jan 10\" MUST be \"2025-01-10\".\n4.  **Extract Transaction Details**: Once you are certain of the date, extract the following for each transaction:\n    *   **date**: The full date, strictly formatted as \"YYYY-MM-DD\".\n    *   **description**: The complete, unaltered transaction description.\n    *   **amount**: The numeric value. It is absolutely critical that debits/withdrawals are NEGATIVE numbers and credits/deposits are POSITIVE numbers.\n    *   **category**: Infer a logical category (e.g., \"Groceries\", \"Salary\", \"Utilities\", \"Transportation\"). If unsure, use \"Miscellaneous\".\n    *   **notes**: Include any additional details found on the transaction line (like currency exchange rates). If there are no extra details, leave this as an empty string.\n5.  **Final Output**: Return a single, clean JSON array of all the transaction objects. Do not include any other text, explanations, or formatting.\n\nDocument Data: {{ $json.pages[0].markdown }}",
+        "hasOutputParser": true,
+        "batching": {}
+      },
+      "id": "7456d59b-ded0-4d94-ac56-c6a6764d0e3b",
+      "name": "AI Extract Receipt Data",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        32,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "binaryProperty": "=data",
+        "options": {
+          "batch": false
+        }
+      },
+      "id": "b57cd555-834f-4820-aa06-2925210bbf3a",
+      "name": "Mistral AI OCR",
+      "type": "n8n-nodes-base.mistralAi",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        -16
+      ],
+      "retryOnFail": true,
+      "credentials": {
+        "mistralCloudApi": {
+          "id": "NFvpRij5nb52Jj3W",
+          "name": "Mistral Cloud account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -64,
+        176
+      ],
+      "id": "145f9ad2-2cb9-4b4f-97e2-1f08233a3373",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "nCV8IIZbGUeo00gV",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"date\": {\n        \"type\": \"string\",\n        \"description\": \"Transaction date in YYYY-MM-DD format.\",\n        \"pattern\": \"^\\\\d{4}-\\\\d{2}-\\\\d{2}$\"\n      },\n      \"description\": {\n        \"type\": \"string\",\n        \"description\": \"Concise description of the transaction.\"\n      },\n      \"amount\": {\n        \"type\": \"number\",\n        \"description\": \"Transaction amount. Debits must be negative, credits must be positive.\"\n      },\n      \"category\": {\n        \"type\": \"string\",\n        \"description\": \"A suggested category for the transaction (e.g., 'Groceries', 'Salary').\"\n      },\n      \"notes\": {\n        \"type\": \"string\",\n        \"description\": \"Any additional notes or details about the transaction.\"\n      }\n    },\n    \"required\": [\n      \"date\",\n      \"description\",\n      \"amount\",\n      \"category\"\n    ],\n    \"additionalProperties\": false\n  }\n}\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        176,
+        144
+      ],
+      "id": "1e84ba7a-11a3-4c0a-a6c7-ace615df4749",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "=Attachment",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "root",
+          "mode": "list",
+          "cachedResultName": "/ (Root folder)",
+          "cachedResultUrl": "https://drive.google.com/drive"
+        },
+        "options": {}
+      },
+      "id": "0339ed19-ace3-4f9d-82c1-11895b5ed5df",
+      "name": "Upload File",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -784,
+        -32
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6bpSWLC1KGMiFnIW",
+          "name": "cabrera.michelangelo0502@gmail.com GDRIVEACC"
+        }
+      },
+      "notes": "using receipts.atgs@gmail.com"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -560,
+        -32
+      ],
+      "id": "3879f461-8777-4765-86ed-4710463e13d3",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6bpSWLC1KGMiFnIW",
+          "name": "cabrera.michelangelo0502@gmail.com GDRIVEACC"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Upload File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mistral AI OCR": {
+      "main": [
+        [
+          {
+            "node": "AI Extract Receipt Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Extract Receipt Data",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Extract Receipt Data",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload File": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Mistral AI OCR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3cc741fd-7e61-48e1-834f-3080f18abc3c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7fc3c61ef85638e1d25d56a31cca83a85dfce006123206ad2bfccd8da6f88b47"
+  },
+  "id": "VGNVXLoa2HkHBvkY",
+  "tags": []
+}
