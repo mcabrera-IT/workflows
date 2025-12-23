@@ -29,8 +29,15 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You are an expert at analyzing bank statements. Your task is to extract all transactions with perfect accuracy, paying special attention to dates.\n\nFollow this multi-step process carefully:\n1.  **Identify Statement Period**: Before doing anything else, scan the document to find the statement's period (e.g., \"Statement from Dec 15, 2024 to Jan 14, 2025\"). This is the most critical step for date accuracy.\n2.  **Determine Correct Year**: Use the year(s) from the statement period as the ground truth. Many transaction lines only show the month and day (e.g., 'Dec 16'). You must use the context of the statement period to assign the correct year.\n3.  **Handle Year-End Crossover**: This is a common point of error. If a statement period crosses from December to January, transactions listed under December belong to the *earlier* year, and those under January belong to the *later* year. For a statement period of \"Dec 15, 2024 - Jan 14, 2025\", a transaction on \"Dec 16\" MUST be \"2024-12-16\", and a transaction on \"Jan 10\" MUST be \"2025-01-10\".\n4.  **Extract Transaction Details**: Once you are certain of the date, extract the following for each transaction:\n    *   **date**: The full date, strictly formatted as \"YYYY-MM-DD\".\n    *   **description**: The complete, unaltered transaction description.\n    *   **amount**: The numeric value. It is absolutely critical that debits/withdrawals are NEGATIVE numbers and credits/deposits are POSITIVE numbers.\n    *   **category**: Infer a logical category (e.g., \"Groceries\", \"Salary\", \"Utilities\", \"Transportation\"). If unsure, use \"Miscellaneous\".\n    *   **notes**: Include any additional details found on the transaction line (like currency exchange rates). If there are no extra details, leave this as an empty string.\n5.  **Final Output**: Return a single, clean JSON array of all the transaction objects. Do not include any other text, explanations, or formatting.\n\nDocument Data: {{ $json.pages[0].markdown }}",
+        "text": "=Document Data: {{ $json.pages[0].markdown }}",
         "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an expert at analyzing bank statements. Your task is to extract all transactions with perfect accuracy, paying special attention to dates.  Follow this multi-step process carefully: 1.  **Identify Statement Period**: Before doing anything else, scan the document to find the statement's period (e.g., \"Statement from Dec 15, 2024 to Jan 14, 2025\"). This is the most critical step for date accuracy. 2.  **Determine Correct Year**: Use the year(s) from the statement period as the ground truth. Many transaction lines only show the month and day (e.g., 'Dec 16'). You must use the context of the statement period to assign the correct year. 3.  **Handle Year-End Crossover**: This is a common point of error. If a statement period crosses from December to January, transactions listed under December belong to the *earlier* year, and those under January belong to the *later* year. For a statement period of \"Dec 15, 2024 - Jan 14, 2025\", a transaction on \"Dec 16\" MUST be \"2024-12-16\", and a transaction on \"Jan 10\" MUST be \"2025-01-10\". 4.  **Extract Transaction Details**: Once you are certain of the date, extract the following for each transaction:     *   **date**: The full date, strictly formatted as \"YYYY-MM-DD\".     *   **description**: The complete, unaltered transaction description.     *   **amount**: The numeric value. It is absolutely critical that debits/withdrawals are NEGATIVE numbers and credits/deposits are POSITIVE numbers.     *   **category**: Infer a logical category (e.g., \"Groceries\", \"Salary\", \"Utilities\", \"Transportation\"). If unsure, use \"Miscellaneous\".     *   **notes**: Include any additional details found on the transaction line (like currency exchange rates). If there are no extra details, leave this as an empty string. 5.  **Final Output**: Return a single, clean JSON array of all the transaction objects. Do not include any other text, explanations, or formatting."
+            }
+          ]
+        },
         "batching": {}
       },
       "id": "7456d59b-ded0-4d94-ac56-c6a6764d0e3b",
@@ -238,7 +245,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "3cc741fd-7e61-48e1-834f-3080f18abc3c",
+  "versionId": "f8c82ad5-9747-4ff0-8150-7d52d5c1825b",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "7fc3c61ef85638e1d25d56a31cca83a85dfce006123206ad2bfccd8da6f88b47"
