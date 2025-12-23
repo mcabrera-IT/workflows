@@ -1,0 +1,865 @@
+{
+  "name": "Marketing Dashboard - Complete Content Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "15p8KRq2np1fiClobWLDjOOAV95tBtorE",
+          "mode": "list",
+          "cachedResultName": "Example Marketing",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/15p8KRq2np1fiClobWLDjOOAV95tBtorE"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "position": [
+        -2464,
+        -432
+      ],
+      "id": "0ef6ce0a-d078-4991-91a4-b65c3acc8897",
+      "typeVersion": 1,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6bpSWLC1KGMiFnIW",
+          "name": "cabrera.michelangelo0502@gmail.com GDRIVEACC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and format file data for dashboard API\nconst file = $input.item.json;\nconst mimeType = file.mimeType || '';\n\n// Determine file type based on MIME type\nconst isVideo = mimeType.startsWith('video/');\nconst isImage = mimeType.startsWith('image/');\n\n// Extract Drive file ID from webViewLink or use id\nconst driveFileId = file.id;\n\n// Build URLs\nconst driveUrl = file.webViewLink || `https://drive.google.com/file/d/${driveFileId}/view`;\nconst embedUrl = file.webViewLink ? file.webViewLink.replace('/view', '/preview') : `https://drive.google.com/file/d/${driveFileId}/preview`;\nconst thumbnailUrl = file.thumbnailLink || (isVideo ? `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000` : `https://drive.google.com/thumbnail?id=${driveFileId}&sz=w1000`);\n\n// Format for dashboard API /api/content/sync\nreturn [{\n  json: {\n    id: driveFileId,\n    filename: file.name,\n    fileType: isVideo ? 'video' : isImage ? 'image' : 'unknown',\n    mimeType: mimeType,\n    driveUrl: driveUrl,\n    thumbnailUrl: thumbnailUrl,\n    embedUrl: embedUrl,\n    uploadedAt: file.createdTime || new Date().toISOString(),\n    // Keep original data for later use\n    originalData: file\n  }\n}];"
+      },
+      "name": "Format Content Data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -2240,
+        -432
+      ],
+      "id": "e78cc54d-fae1-4b88-9ef0-4be15112b3de",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_URL || 'http://119.8.60.127:3001' }}/api/content/sync",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contentItems\": [\n    {\n      \"id\": \"{{ $json.id }}\",\n      \"filename\": \"{{ $json.filename }}\",\n      \"fileType\": \"{{ $json.fileType }}\",\n      \"mimeType\": \"{{ $json.mimeType }}\",\n      \"driveUrl\": \"{{ $json.driveUrl }}\",\n      \"thumbnailUrl\": \"{{ $json.thumbnailUrl }}\",\n      \"embedUrl\": \"{{ $json.embedUrl }}\",\n      \"uploadedAt\": \"{{ $json.uploadedAt }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "name": "Sync Content to Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -2016,
+        -432
+      ],
+      "id": "bf188001-dcb2-4ff2-8db2-ba009d26cf94",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract content item ID from sync response\nconst syncResponse = $input.item.json;\nconst originalData = $('Format Content Data').item.json;\n\n// Get the synced content item ID\n// The API returns syncedIds array, but we need to get the actual UUID\n// We'll use driveFileId to look it up or store it for later\nlet contentItemId = null;\n\nif (syncResponse.syncedIds && syncResponse.syncedIds.length > 0) {\n  contentItemId = syncResponse.syncedIds[0];\n}\n\n// Prepare data for caption generation\nreturn [{\n  json: {\n    contentItemId: contentItemId,\n    driveFileId: originalData.id,\n    filename: originalData.filename,\n    fileType: originalData.fileType,\n    mimeType: originalData.mimeType,\n    embedUrl: originalData.embedUrl,\n    driveUrl: originalData.driveUrl,\n    thumbnailUrl: originalData.thumbnailUrl\n  }\n}];"
+      },
+      "name": "Extract Content Info",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1792,
+        -432
+      ],
+      "id": "ad2c5671-ffe9-4569-a0c6-8dd4134fe358",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.fileType }}",
+              "operation": "equals",
+              "value2": "image"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Is Image?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -1552,
+        -432
+      ],
+      "id": "6a88f611-0ea5-4f4a-b338-b9eb161526af",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "anthropicApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "claude-sonnet-4-20250514"
+            },
+            {
+              "name": "max_tokens",
+              "value": "1024"
+            },
+            {
+              "name": "messages",
+              "value": "={{ [{\"role\": \"user\", \"content\": \"Generate 3 social media caption variants for a {{ $json.fileType }} titled: '{{ $json.filename }}'. Create captions in these exact tones: Professional, Casual, and Engaging. Each caption should be 80-150 characters with 2-3 relevant hashtags. Return ONLY a valid JSON array with this exact format (no markdown, no explanation, just the JSON): [{\\\"tone\\\": \\\"Professional\\\", \\\"content\\\": \\\"your caption here\\\"}, {\\\"tone\\\": \\\"Casual\\\", \\\"content\\\": \\\"your caption here\\\"}, {\\\"tone\\\": \\\"Engaging\\\", \\\"content\\\": \\\"your caption here\\\"}]\"}] }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "AI Caption for Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        656,
+        256
+      ],
+      "id": "ceed04f0-7075-4492-97b4-31dce44cc4fa",
+      "typeVersion": 4.3,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response and format captions for dashboard\nconst aiResponse = $input.first().json.output;\nconst contentData = $('Extract Content Info').item.json;\n\n// Extract captions from Claude response\nlet captions = [];\n\ntry {\n  // Claude returns content in response.content[0].text\n  const responseText = aiResponse.content && aiResponse.content[0] && aiResponse.content[0].text\n    ? aiResponse.content[0].text\n    : JSON.stringify(aiResponse);\n  \n  // Try to extract JSON from the response\n  let jsonMatch = responseText.match(/\\[\\s*\\{[^\\]]+\\}\\s*\\]/s);\n  if (!jsonMatch) {\n    // Try to find JSON array anywhere in the text\n    jsonMatch = responseText.match(/\\[.*?\\]/s);\n  }\n  \n  if (jsonMatch) {\n    captions = JSON.parse(jsonMatch[0]);\n  } else {\n    // Fallback: try parsing the whole response\n    captions = JSON.parse(responseText);\n  }\n} catch (error) {\n  console.error('Error parsing AI response:', error);\n  // Fallback: create default captions\n  captions = [\n    {\n      tone: 'Professional',\n      content: `Check out our latest ${contentData.fileType}: ${contentData.filename}`\n    },\n    {\n      tone: 'Casual',\n      content: `Hey! Check out this awesome ${contentData.fileType} we just created!`\n    },\n    {\n      tone: 'Engaging',\n      content: `You won't believe what we've created! Check out this ${contentData.fileType}!`\n    }\n  ];\n}\n\n// Validate and filter captions\nconst validCaptions = captions\n  .filter(cap => {\n    return cap && \n           cap.tone && \n           cap.content && \n           ['Professional', 'Casual', 'Engaging'].includes(cap.tone) &&\n           cap.content.trim().length >= 10;\n  })\n  .map(cap => ({\n    tone: cap.tone,\n    content: cap.content.trim()\n  }));\n\n// Ensure we have at least one caption\nif (validCaptions.length === 0) {\n  validCaptions.push({\n    tone: 'Professional',\n    content: `New ${contentData.fileType}: ${contentData.filename}`\n  });\n}\n\nreturn [{\n  json: {\n    driveFileId: contentData.driveFileId,\n    contentItemId: contentData.contentItemId,\n    captions: validCaptions\n  }\n}];"
+      },
+      "name": "Parse AI Response",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -480,
+        -720
+      ],
+      "id": "e5ea6364-9cec-46a2-9683-266281310872",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_URL || 'http://119.8.60.127:3001' }}/api/webhooks/n8n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"captions_generated\",\n  \"data\": {\n    \"driveFileId\": \"{{ $json.driveFileId  }}\",\n    \"contentItemId\": \"{{ $json.contentItemId }}\",\n    \"captions\": {{ JSON.stringify($json.captions) }}\n  }\n}",
+        "options": {}
+      },
+      "name": "Send Captions to Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -256,
+        -720
+      ],
+      "id": "6279c349-95a8-4c09-8fe2-b3448fc309c3",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "path": "approval-webhook",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.webhook",
+      "position": [
+        -912,
+        192
+      ],
+      "id": "196a613f-acd3-410d-84f2-c93e725f8662",
+      "typeVersion": 2.1,
+      "webhookId": "31bb30cc-8a20-4ee1-87c5-83818965b252"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract data from approval webhook\nconst webhookData = $input.item.json;\n\n// The dashboard sends:\n// { event: 'caption_approved', captionId, contentItemId, caption: {...}, content: {...}, approvedBy, approvedAt }\n\n// Extract platform information (if provided) or default to all platforms\nconst platforms = webhookData.platforms || ['facebook', 'instagram'];\n\n// Prepare data for each platform\nconst platformData = platforms.map(platform => ({\n  platform: platform,\n  captionId: webhookData.captionId,\n  contentItemId: webhookData.contentItemId,\n  caption: webhookData.caption.content,\n  tone: webhookData.caption.tone,\n  content_type: webhookData.content.fileType,\n  drive_url: webhookData.content.driveUrl,\n  embed_url: webhookData.content.embedUrl,\n  filename: webhookData.content.filename,\n  approvedBy: webhookData.approvedBy,\n  approvedAt: webhookData.approvedAt\n}));\n\nreturn platformData.map(item => ({ json: item }));"
+      },
+      "name": "Split by Platform",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -720,
+        192
+      ],
+      "id": "57b4f718-d088-4c2b-86e7-c9c6c3c7e6d6",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.platform }}",
+              "operation": "equals",
+              "value2": "facebook"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Route: Facebook",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -512,
+        80
+      ],
+      "id": "96e4b91b-e897-44f9-afef-8257e5947a13",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.content_type === 'video' ? 'https://graph.facebook.com/v18.0/' + $env.FACEBOOK_PAGE_ID + '/videos' : 'https://graph.facebook.com/v18.0/' + $env.FACEBOOK_PAGE_ID + '/photos' }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "description",
+              "value": "={{ $json.caption }}"
+            },
+            {
+              "name": "={{ $json.content_type === 'video' ? 'file_url' : 'url' }}",
+              "value": "={{ $json.drive_url }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FACEBOOK_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Publish to Facebook",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -320,
+        80
+      ],
+      "id": "30968233-3e48-4e4a-934d-4d14a1c945e0",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.platform }}",
+              "operation": "equals",
+              "value2": "instagram"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Route: Instagram",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -512,
+        288
+      ],
+      "id": "b3766685-fc13-4d26-beb8-9824592af98f",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Log publication for tracking\nconst publishResponse = $input.item.json;\nconst originalData = $('Split by Platform').item.json;\n\nreturn [{\n  json: {\n    platform: originalData.platform,\n    contentItemId: originalData.contentItemId,\n    captionId: originalData.captionId,\n    publishedAt: new Date().toISOString(),\n    publishResponse: publishResponse,\n    success: !publishResponse.error\n  }\n}];"
+      },
+      "name": "Log Publication",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -112,
+        192
+      ],
+      "id": "e7e56dcb-3845-410a-a26d-e664bd661932",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write three short and engaging captions for the uploaded media {{ $binary.data }} that fit well across Facebook, Instagram, TikTok, and LinkedIn.  \nEach caption should include relevant hashtags and match the given tone.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "CRITICAL INSTRUCTION: Return ONLY a valid JSON array — no markdown, no text, no explanations.\n\nExpected format:\n[\n  {\"tone\": \"Professional\", \"content\": \"Your professional caption with hashtags\"},\n  {\"tone\": \"Casual\", \"content\": \"Your casual caption with hashtags\"},\n  {\"tone\": \"Engaging\", \"content\": \"Your engaging caption with hashtags\"}\n]\n\nRULES:\n- Return only this array (no other characters before or after).\n- Each caption must be unique, concise, and under 20 words.\n- Include 2–4 relevant hashtags per caption.\n- {{ $binary }} refers to an uploaded image or video; adapt the caption accordingly.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -832,
+        -720
+      ],
+      "id": "ab672596-b9be-4a92-a6d5-ca8a5fd37c51",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        -496
+      ],
+      "id": "dee1d9e6-52be-418e-af2c-d4e71745d6db",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "0UF6sQE4DOqmJLoZ",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\n  {\"tone\": \"Professional\", \"content\": \"Your professional caption with hashtags\"},\n  {\"tone\": \"Casual\", \"content\": \"Your casual caption with hashtags\"},\n  {\"tone\": \"Engaging\", \"content\": \"Your engaging caption with hashtags\"}\n]\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -704,
+        -496
+      ],
+      "id": "1f156f1e-189a-4bf4-bd45-97fc9abe6368",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "content": "## WIP\n**APPROVAL SETUP**",
+        "height": 704,
+        "width": 1232
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1008,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "f153e36a-0d2f-4298-bd3a-11cdd29b7381",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Google Drive Trigger').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "9311c19e-4616-4ee4-abc7-89190b231d59",
+      "name": "Google Drive1",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -1280,
+        -720
+      ],
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6bpSWLC1KGMiFnIW",
+          "name": "cabrera.michelangelo0502@gmail.com GDRIVEACC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileName": "={{ $('Google Drive Trigger').item.json.originalFilename.replaceAll(\" \", \"_\") }}",
+        "options": {}
+      },
+      "id": "cbf56a51-d7ae-4cb6-bef7-30fba5443a04",
+      "name": "Read video from Google Drive1",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "position": [
+        -1056,
+        -720
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "c15e9032-704f-4dcb-b426-133f1dc879b4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2464,
+        144
+      ],
+      "id": "eb25927e-4d6d-4996-b85c-a4ea1d371352",
+      "name": "Recaption Webhook",
+      "webhookId": "c15e9032-704f-4dcb-b426-133f1dc879b4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract data from webhook payload\nconst webhookData = $input.item.json;\n\nconst payload = {\n  contentItemId: $input.first().json.body.contentItemId,\n  driveFileId: $input.first().json.body.driveFileId,\n  filename: $input.first().json.body.content.filename,\n  fileType: $input.first().json.body.content.fileType,\n  driveUrl: $input.first().json.body.content.driveUrl,\n  embedUrl: $input.first().json.body.content.embedUrl,\n  thumbnailUrl: $input.first().json.body.content.thumbnailUrl,\n  mimeType: $input.first().json.body.content.mimeType\n};\n\nreturn {\n  json: payload\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2240,
+        144
+      ],
+      "id": "8100bd00-982e-451e-86d8-9933a8756508",
+      "name": "Get Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write three short and engaging captions for the uploaded media {{ $binary.data }} that fit well across Facebook, Instagram, TikTok, and LinkedIn.  \nEach caption should include relevant hashtags and match the given tone.\n",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "CRITICAL INSTRUCTION: Return ONLY a valid JSON array — no markdown, no text, no explanations.\n\nExpected format:\n[\n  {\"tone\": \"Professional\", \"content\": \"Your professional caption with hashtags\"},\n  {\"tone\": \"Casual\", \"content\": \"Your casual caption with hashtags\"},\n  {\"tone\": \"Engaging\", \"content\": \"Your engaging caption with hashtags\"}\n]\n\nRULES:\n- Return only this array (no other characters before or after).\n- Each caption must be unique, concise, and under 20 words.\n- Include 2–4 relevant hashtags per caption.\n- {{ $binary }} refers to an uploaded image or video; adapt the caption accordingly.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1792,
+        144
+      ],
+      "id": "23e5ecdf-5840-435c-9233-0dfb7a29ee08",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        320
+      ],
+      "id": "7bb6cc00-1e00-45e5-9f60-14b5093f619b",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "0UF6sQE4DOqmJLoZ",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "[\n  {\"tone\": \"Professional\", \"content\": \"Your professional caption with hashtags\"},\n  {\"tone\": \"Casual\", \"content\": \"Your casual caption with hashtags\"},\n  {\"tone\": \"Engaging\", \"content\": \"Your engaging caption with hashtags\"}\n]\n"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -1632,
+        320
+      ],
+      "id": "991b6fcc-259d-4dda-ab7a-b61bdf69aba5",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_URL || 'http://119.8.60.127:3001' }}/api/webhooks/n8n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event\": \"captions_generated\",\n  \"data\": {\n    \"contentItemId\": \"{{ $json.contentItemId }}\",\n    \"driveFileId\": \"{{ $json.driveFileId }}\",\n    \"captions\": {{ JSON.stringify($json.captions) }}\n  }\n}",
+        "options": {}
+      },
+      "name": "Send Captions to Dashboard1",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -1328,
+        144
+      ],
+      "id": "fef5cf8b-fc0a-40d3-b9ab-e4b93f229e3c",
+      "typeVersion": 4.3
+    },
+    {
+      "parameters": {
+        "content": "## Recaption Workflow\n**Dashboard request recaption ->  triggers webhook .> AI Agent generates another caption -> send data -> updates captions on webapp.",
+        "height": 576,
+        "width": 1344
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -2544,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "6c682077-91b0-4dc4-a9a5-85d06e9a9904",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.driveFileId }}",
+          "mode": "id"
+        },
+        "binaryPropertyName": "fileContent",
+        "options": {}
+      },
+      "id": "91415251-5099-4d8b-8cb8-932401e595d9",
+      "name": "Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "position": [
+        -2032,
+        144
+      ],
+      "retryOnFail": true,
+      "typeVersion": 1,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "6bpSWLC1KGMiFnIW",
+          "name": "cabrera.michelangelo0502@gmail.com GDRIVEACC"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response and format captions for dashboard\nconst aiResponse = $input.first().json.output;\nconst contentData = $('Get Data').item.json;\n\n// Extract captions from Claude response\nlet captions = [];\n\ntry {\n  // Claude returns content in response.content[0].text\n  const responseText = aiResponse.content && aiResponse.content[0] && aiResponse.content[0].text\n    ? aiResponse.content[0].text\n    : JSON.stringify(aiResponse);\n  \n  // Try to extract JSON from the response\n  let jsonMatch = responseText.match(/\\[\\s*\\{[^\\]]+\\}\\s*\\]/s);\n  if (!jsonMatch) {\n    // Try to find JSON array anywhere in the text\n    jsonMatch = responseText.match(/\\[.*?\\]/s);\n  }\n  \n  if (jsonMatch) {\n    captions = JSON.parse(jsonMatch[0]);\n  } else {\n    // Fallback: try parsing the whole response\n    captions = JSON.parse(responseText);\n  }\n} catch (error) {\n  console.error('Error parsing AI response:', error);\n  // Fallback: create default captions\n  captions = [\n    {\n      tone: 'Professional',\n      content: `Check out our latest ${contentData.fileType}: ${contentData.filename}`\n    },\n    {\n      tone: 'Casual',\n      content: `Hey! Check out this awesome ${contentData.fileType} we just created!`\n    },\n    {\n      tone: 'Engaging',\n      content: `You won't believe what we've created! Check out this ${contentData.fileType}!`\n    }\n  ];\n}\n\n// Validate and filter captions\nconst validCaptions = captions\n  .filter(cap => {\n    return cap && \n           cap.tone && \n           cap.content && \n           ['Professional', 'Casual', 'Engaging'].includes(cap.tone) &&\n           cap.content.trim().length >= 10;\n  })\n  .map(cap => ({\n    tone: cap.tone,\n    content: cap.content.trim()\n  }));\n\n// Ensure we have at least one caption\nif (validCaptions.length === 0) {\n  validCaptions.push({\n    tone: 'Professional',\n    content: `New ${contentData.fileType}: ${contentData.filename}`\n  });\n}\n\nreturn [{\n  json: {\n    driveFileId: contentData.driveFileId,\n    contentItemId: contentData.contentItemId,\n    captions: validCaptions\n  }\n}];"
+      },
+      "name": "Parse AI Response1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1488,
+        144
+      ],
+      "id": "26f5fffc-459a-4065-9c27-89e45ac83233",
+      "typeVersion": 2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Content Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Content Data": {
+      "main": [
+        [
+          {
+            "node": "Sync Content to Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Content to Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Extract Content Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Content Info": {
+      "main": [
+        [
+          {
+            "node": "Is Image?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Image?": {
+      "main": [
+        [
+          {
+            "node": "Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "AI Caption for Video": {
+      "main": [
+        []
+      ]
+    },
+    "Parse AI Response": {
+      "main": [
+        [
+          {
+            "node": "Send Captions to Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Approval": {
+      "main": [
+        [
+          {
+            "node": "Split by Platform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split by Platform": {
+      "main": [
+        [
+          {
+            "node": "Route: Facebook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route: Instagram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: Facebook": {
+      "main": [
+        [
+          {
+            "node": "Publish to Facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish to Facebook": {
+      "main": [
+        [
+          {
+            "node": "Log Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: Instagram": {
+      "main": [
+        [
+          {
+            "node": "Log Publication",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "Read video from Google Drive1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read video from Google Drive1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recaption Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Data": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Response1": {
+      "main": [
+        [
+          {
+            "node": "Send Captions to Dashboard1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5d7ce94b-70d0-4020-a523-7cf660cb5b88",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7fc3c61ef85638e1d25d56a31cca83a85dfce006123206ad2bfccd8da6f88b47"
+  },
+  "id": "KYwXID2jTTQ85fE4",
+  "tags": []
+}
